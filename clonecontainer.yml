@@ -5,34 +5,51 @@
 
   vars:
     api_host: "10.24.37.2"
-    api_token: "008543b6-3b6a-4c68-b408-5e3015218c52"
+
+    # Pas dit aan naar jouw token
+    api_token_id: "root@pam!ansible"
+    api_token_secret: "008543b6-3b6a-4c68-b408-5e3015218c52"
+
     source_vmid: 1000
     target_vmid: "{{ new_vmid }}"
 
+    api_headers:
+      Authorization: "PVEAPIToken={{ api_token_id }}={{ api_token_secret }}"
+
   tasks:
-    - name: Zoek node waar CT draait
+    - name: Haal alle VM/CT resources op
       uri:
         url: "https://{{ api_host }}:8006/api2/json/cluster/resources?type=vm"
         method: GET
-        headers:
-          Authorization: "PVEAPIToken={{ api_token }}"
+        headers: "{{ api_headers }}"
         validate_certs: no
       register: vm_list
 
-    - name: Bepaal node naam
+    - name: Zoek juiste CT
       set_fact:
         node_name: "{{ item.node }}"
       loop: "{{ vm_list.json.data }}"
-      when: item.vmid == source_vmid
+      when:
+        - item.vmid == source_vmid
+        - item.type == "lxc"
+
+    - name: Stop als CT niet gevonden is
+      fail:
+        msg: "CT {{ source_vmid }} niet gevonden in cluster"
+      when: node_name is not defined
 
     - name: Clone container
       uri:
         url: "https://{{ api_host }}:8006/api2/json/nodes/{{ node_name }}/lxc/{{ source_vmid }}/clone"
         method: POST
-        headers:
-          Authorization: "PVEAPIToken={{ api_token }}"
+        headers: "{{ api_headers }}"
         body_format: form-urlencoded
         body:
           newid: "{{ target_vmid }}"
           full: 1
         validate_certs: no
+      register: clone_result
+
+    - name: Toon resultaat
+      debug:
+        var: clone_result.json
