@@ -1,0 +1,20 @@
+---
+- name: Update en upgrade apt packages
+  hosts: all
+  become: yes
+
+  vars:
+    secrets_lines: "{{ lookup('file', 'pvesecrets').splitlines() }}"
+    ansible_user: "{{ secrets_lines[0] }}"
+    ansible_password: "{{ secrets_lines[1] }}"
+    ansible_become_password: "{{ secrets_lines[1] }}"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade alle packages
+      apt:
+        upgrade: dist
