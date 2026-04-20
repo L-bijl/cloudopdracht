@@ -1,0 +1,38 @@
+---
+- name: Clone Proxmox CT
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    api_host: "10.24.37.2"
+    api_token: "008543b6-3b6a-4c68-b408-5e3015218c52"
+    source_vmid: 1000
+    target_vmid: "{{ new_vmid }}"
+
+  tasks:
+    - name: Zoek node waar CT draait
+      uri:
+        url: "https://{{ api_host }}:8006/api2/json/cluster/resources?type=vm"
+        method: GET
+        headers:
+          Authorization: "PVEAPIToken={{ api_token }}"
+        validate_certs: no
+      register: vm_list
+
+    - name: Bepaal node naam
+      set_fact:
+        node_name: "{{ item.node }}"
+      loop: "{{ vm_list.json.data }}"
+      when: item.vmid == source_vmid
+
+    - name: Clone container
+      uri:
+        url: "https://{{ api_host }}:8006/api2/json/nodes/{{ node_name }}/lxc/{{ source_vmid }}/clone"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken={{ api_token }}"
+        body_format: form-urlencoded
+        body:
+          newid: "{{ target_vmid }}"
+          full: 1
+        validate_certs: no
