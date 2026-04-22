@@ -1,0 +1,18 @@
+- hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Clone container from template
+      community.general.proxmox:
+        api_user: "root@pam"
+        api_token_id: "ansibletoken"
+        api_token_secret: "008543b6-3b6a-4c68-b408-5e3015218c52"
+        api_host: "10.24.37.4"
+        node: "PVE03"
+        clone: 600
+        vmid: 602
+        hostname: "wp2"
+        storage: "rbd"
+        clone_type: linked
+        timeout: 300
+        state: present
