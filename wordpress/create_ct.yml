@@ -6,21 +6,48 @@
     proxmox_api_token_id: "ansible2"
     proxmox_api_token_secret: "5c3de81c-c090-4a80-865b-8ce59920a4f3"
     proxmox_api_host: "10.24.37.4"
+    containers:
+      - { id: 603, ip: 10.24.37.61 }
 
   tasks:
-    - name: Remove container if exists
-      community.general.proxmox:
-        api_user: "{{ proxmox_api_user }}"
-        api_token_id: "{{ proxmox_api_token_id }}"
-        api_token_secret: "{{ proxmox_api_token_secret }}"
-        api_host: "{{ proxmox_api_host }}"
-        node: "PVE03"
-        vmid: 602
-        state: absent
+    - name: Stop container
+      shell: ssh root@{{ proxmox_api_host }} "pct stop {{ item.id }}"
+      loop: "{{ containers }}"
+      ignore_errors: yes
+
+    - name: Remove container via SSH
+      shell: ssh root@{{ proxmox_api_host }} "pct destroy {{ item.id }} --purge"
+      loop: "{{ containers }}"
       ignore_errors: yes
 
     - name: Clone container via SSH
-      shell: ssh root@10.24.37.4 "pct clone 600 603 --hostname wp2"
+      shell: ssh root@{{ proxmox_api_host }} "pct clone 600 {{ item.id }} --hostname wp{{ item.id }}"
+      loop: "{{ containers }}"
 
-    - name: Start container via SSH
-      shell: ssh root@10.24.37.4 "pct start 603"
+    - name: Set IP
+      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -net0 name=eth0,bridge=vmbr0,ip={{ item.ip }}/24,gw=10.24.37.1"
+      loop: "{{ containers }}"
+
+    - name: Start container
+      shell: ssh root@{{ proxmox_api_host }} "pct start {{ item.id }}"
+      loop: "{{ containers }}"
+
+    - name: Enable firewall
+      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -net0 name=eth0,bridge=vmbr0,firewall=1"
+      loop: "{{ containers }}"
+
+    - name: Allow HTTP
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 80"
+      loop: "{{ containers }}"
+
+    - name: Allow HTTPS
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 443"
+      loop: "{{ containers }}"
+
+    - name: Allow SSH
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 22"
+      loop: "{{ containers }}"
+
+    - name: Set default policy DROP
+      shell: ssh root@{{ proxmox_api_host }} "pvesh set /nodes/PVE03/lxc/{{ item.id }}/firewall/options -policy_in DROP -policy_out ACCEPT -enable 1"
+      loop: "{{ containers }}"
