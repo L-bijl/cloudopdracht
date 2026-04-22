@@ -13,3 +13,23 @@
           - unzip
           - wget
         update_cache: yes
+
+    - name: Install python mysql dependency
+      apt:
+        name: python3-pymysql
+        state: present
+
+    - name: Create database
+      community.mysql.mysql_db:
+        name: wordpress
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Create database user
+      community.mysql.mysql_user:
+        name: wpuser
+        password: Welkom01
+        priv: 'wordpress.*:ALL'
+        host: localhost
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
