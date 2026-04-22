@@ -33,3 +33,56 @@
         host: localhost
         state: present
         login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Clean web root
+      file:
+        path: /var/www/html
+        state: absent
+
+    - name: Recreate web root
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+
+    - name: Download WordPress
+      get_url:
+        url: https://wordpress.org/latest.zip
+        dest: /tmp/wordpress.zip
+
+    - name: Unzip WordPress directly into web root
+      unarchive:
+        src: /tmp/wordpress.zip
+        dest: /var/www/html/
+        remote_src: yes
+
+    - name: Move content if wordpress folder exists
+      shell: |
+        if [ -d /var/www/html/wordpress ]; then
+          mv /var/www/html/wordpress/* /var/www/html/
+          rm -rf /var/www/html/wordpress
+        fi
+
+    - name: Set permissions
+      file:
+        path: /var/www/html
+        recurse: yes
+        owner: www-data
+        group: www-data
+
+    - name: Copy wp-config sample
+      copy:
+        src: /var/www/html/wp-config-sample.php
+        dest: /var/www/html/wp-config.php
+        remote_src: yes
+
+    - name: Set database config
+      replace:
+        path: /var/www/html/wp-config.php
+        regexp: "{{ item.search }}"
+        replace: "{{ item.replace }}"
+      loop:
+        - { search: "database_name_here", replace: "wordpress" }
+        - { search: "username_here", replace: "wpuser" }
+        - { search: "password_here", replace: "Welkom01" }
