@@ -1,0 +1,15 @@
+- hosts: wordpress
+  become: yes
+
+  tasks:
+    - name: Install packages
+      apt:
+        name:
+          - apache2
+          - mariadb-server
+          - php
+          - php-mysql
+          - libapache2-mod-php
+          - unzip
+          - wget
+        update_cache: yes
