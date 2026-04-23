@@ -27,6 +27,11 @@
       shell: ssh root@{{ proxmox_api_host }} "pct clone 600 {{ item.id }} --hostname wp{{ item.id }}"
       loop: "{{ containers }}"
 
+    - name: Remove old network config
+      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -delete net0"
+      loop: "{{ containers }}"
+      ignore_errors: yes
+
     - name: Set IP
       shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -net0 name=eth0,bridge=vmbr0,ip={{ item.ip }}/24,gw=10.24.37.1"
       loop: "{{ containers }}"
@@ -43,7 +48,7 @@
       loop: "{{ containers }}"
 
     - name: Enable firewall
-      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -net0 name=eth0,bridge=vmbr0,firewall=1"
+      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -features nesting=1"
       loop: "{{ containers }}"
 
     - name: Allow HTTP
