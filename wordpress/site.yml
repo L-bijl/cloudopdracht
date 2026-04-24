@@ -36,6 +36,14 @@
       shell: ssh root@{{ proxmox_api_host }} "pct start {{ item.id }}"
       loop: "{{ containers }}"
 
+
+    - name: Wait for SSH to be ready
+      wait_for:
+        host: "{{ item.ip }}"
+        port: 22
+        timeout: 60
+      loop: "{{ containers }}"
+
     - name: Add SSH key to container (idempotent)
       shell: |
         ssh root@{{ proxmox_api_host }} "pct exec {{ item.id }} -- mkdir -p /root/.ssh"
@@ -43,23 +51,27 @@
         ssh root@{{ proxmox_api_host }} "pct exec {{ item.id }} -- chmod 600 /root/.ssh/authorized_keys"
       loop: "{{ containers }}"
 
-    - name: Enable firewall
-      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -features nesting=1"
-      loop: "{{ containers }}"
-
     - name: Allow HTTP
-      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 80"
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 80 -enable 1"
       loop: "{{ containers }}"
 
     - name: Allow HTTPS
-      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 443"
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 443 -enable 1"
       loop: "{{ containers }}"
 
     - name: Allow SSH
-      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 22"
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 22 -enable 1"
+      loop: "{{ containers }}"
+
+    - name: Allow Node Exporter
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 9100 -enable 1"
       loop: "{{ containers }}"
 
     - name: Set default policy DROP
+      shell: ssh root@{{ proxmox_api_host }} "pvesh set /nodes/PVE03/lxc/{{ item.id }}/firewall/options -policy_in DROP -policy_out ACCEPT -enable 1"
+      loop: "{{ containers }}"
+
+    - name: Enable firewall + set policy
       shell: ssh root@{{ proxmox_api_host }} "pvesh set /nodes/PVE03/lxc/{{ item.id }}/firewall/options -policy_in DROP -policy_out ACCEPT -enable 1"
       loop: "{{ containers }}"
 
@@ -83,6 +95,7 @@
           - libapache2-mod-php
           - unzip
           - wget
+          - prometheus-node-exporter
         update_cache: yes
 
     - name: Install python mysql dependency
@@ -157,3 +170,28 @@
         - { search: "database_name_here", replace: "wordpress" }
         - { search: "username_here", replace: "wpuser" }
         - { search: "password_here", replace: "Welkom01" }
+
+- hosts: monitor
+  become: yes
+
+  tasks:
+    - name: Update Prometheus targets file
+      template:
+        src: prometheus_targets.j2
+        dest: /etc/prometheus/targets.yml
+
+    - name: Ensure wordpress job in Prometheus config
+      blockinfile:
+        path: /etc/prometheus/prometheus.yml
+        marker: "# {mark} ANSIBLE WORDPRESS JOB"
+        insertafter: "^scrape_configs:"
+        block: |
+          - job_name: 'wordpress'
+            file_sd_configs:
+              - files:
+                - /etc/prometheus/targets.yml
+
+    - name: Restart Prometheus
+      service:
+        name: prometheus
+        state: restarted
