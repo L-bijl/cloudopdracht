@@ -1,0 +1,159 @@
+- hosts: localhost
+  connection: local
+
+  vars:
+    proxmox_api_user: "root@pam"
+    proxmox_api_token_id: "ansible2"
+    proxmox_api_token_secret: "5c3de81c-c090-4a80-865b-8ce59920a4f3"
+    proxmox_api_host: "10.24.37.4"
+    ssh_key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+
+  tasks:
+    - name: Stop container
+      shell: ssh root@{{ proxmox_api_host }} "pct stop {{ item.id }}"
+      loop: "{{ containers }}"
+      ignore_errors: yes
+
+    - name: Remove container via SSH
+      shell: ssh root@{{ proxmox_api_host }} "pct destroy {{ item.id }} --purge"
+      loop: "{{ containers }}"
+      ignore_errors: yes
+
+    - name: Clone container via SSH
+      shell: ssh root@{{ proxmox_api_host }} "pct clone 600 {{ item.id }} --hostname wp{{ item.id }}"
+      loop: "{{ containers }}"
+
+    - name: Remove old network config
+      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -delete net0"
+      loop: "{{ containers }}"
+      ignore_errors: yes
+
+    - name: Set IP
+      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -net0 name=eth0,bridge=vmbr0,ip={{ item.ip }}/24,gw=10.24.37.1"
+      loop: "{{ containers }}"
+
+    - name: Start container
+      shell: ssh root@{{ proxmox_api_host }} "pct start {{ item.id }}"
+      loop: "{{ containers }}"
+
+    - name: Add SSH key to container (idempotent)
+      shell: |
+        ssh root@{{ proxmox_api_host }} "pct exec {{ item.id }} -- mkdir -p /root/.ssh"
+        ssh root@{{ proxmox_api_host }} "pct exec {{ item.id }} -- bash -c 'grep -qxF \"{{ ssh_key }}\" /root/.ssh/authorized_keys || echo \"{{ ssh_key }}\" >> /root/.ssh/authorized_keys'"
+        ssh root@{{ proxmox_api_host }} "pct exec {{ item.id }} -- chmod 600 /root/.ssh/authorized_keys"
+      loop: "{{ containers }}"
+
+    - name: Enable firewall
+      shell: ssh root@{{ proxmox_api_host }} "pct set {{ item.id }} -features nesting=1"
+      loop: "{{ containers }}"
+
+    - name: Allow HTTP
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 80"
+      loop: "{{ containers }}"
+
+    - name: Allow HTTPS
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 443"
+      loop: "{{ containers }}"
+
+    - name: Allow SSH
+      shell: ssh root@{{ proxmox_api_host }} "pvesh create /nodes/PVE03/lxc/{{ item.id }}/firewall/rules -type in -action ACCEPT -proto tcp -dport 22"
+      loop: "{{ containers }}"
+
+    - name: Set default policy DROP
+      shell: ssh root@{{ proxmox_api_host }} "pvesh set /nodes/PVE03/lxc/{{ item.id }}/firewall/options -policy_in DROP -policy_out ACCEPT -enable 1"
+      loop: "{{ containers }}"
+
+    - name: Add hosts to inventory
+      add_host:
+        name: "{{ item.ip }}"
+        groups: wordpress
+      loop: "{{ containers }}"
+
+- hosts: wordpress
+  become: yes
+
+  tasks:
+    - name: Install packages
+      apt:
+        name:
+          - apache2
+          - mariadb-server
+          - php
+          - php-mysql
+          - libapache2-mod-php
+          - unzip
+          - wget
+        update_cache: yes
+
+    - name: Install python mysql dependency
+      apt:
+        name: python3-pymysql
+        state: present
+
+    - name: Create database
+      community.mysql.mysql_db:
+        name: wordpress
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Create database user
+      community.mysql.mysql_user:
+        name: wpuser
+        password: Welkom01
+        priv: 'wordpress.*:ALL'
+        host: localhost
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Clean web root
+      file:
+        path: /var/www/html
+        state: absent
+
+    - name: Recreate web root
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+
+    - name: Download WordPress
+      get_url:
+        url: https://wordpress.org/latest.zip
+        dest: /tmp/wordpress.zip
+
+    - name: Unzip WordPress directly into web root
+      unarchive:
+        src: /tmp/wordpress.zip
+        dest: /var/www/html/
+        remote_src: yes
+
+    - name: Move content if wordpress folder exists
+      shell: |
+        if [ -d /var/www/html/wordpress ]; then
+          mv /var/www/html/wordpress/* /var/www/html/
+          rm -rf /var/www/html/wordpress
+        fi
+
+    - name: Set permissions
+      file:
+        path: /var/www/html
+        recurse: yes
+        owner: www-data
+        group: www-data
+
+    - name: Copy wp-config sample
+      copy:
+        src: /var/www/html/wp-config-sample.php
+        dest: /var/www/html/wp-config.php
+        remote_src: yes
+
+    - name: Set database config
+      replace:
+        path: /var/www/html/wp-config.php
+        regexp: "{{ item.search }}"
+        replace: "{{ item.replace }}"
+      loop:
+        - { search: "database_name_here", replace: "wordpress" }
+        - { search: "username_here", replace: "wpuser" }
+        - { search: "password_here", replace: "Welkom01" }
