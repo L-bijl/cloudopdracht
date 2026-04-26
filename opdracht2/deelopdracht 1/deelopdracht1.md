@@ -7,7 +7,7 @@
 ![ubuntusetup](screenshots/Picture1.png)
 
 ### Op elke PVE node een docker vm.
-![docker status](screenshots/Picture26.png)
+![vms in proxmox](screenshots/Picture26.png)
 
 ### Benodigde packages geïnstalleerd voor Docker (ca-certificates en curl):
 ![packages installeren](screenshots/Picture2.png)
