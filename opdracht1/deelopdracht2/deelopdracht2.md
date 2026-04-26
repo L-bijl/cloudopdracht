@@ -38,6 +38,10 @@ De uitrol wordt aangestuurd vanuit één Ansible playbook:
   * configureert netwerk
   * voegt SSH keys toe
   * installeert WordPress
+  * Voegt gemaakte containers toe aan een lijst voor monitoring. Helaas heeft de monitor node problemen inmiddels.
+
+  [site.yml](klant1/site.yml)
+
 
 Door gebruik te maken van een loop over de containerlijst is de oplossing eenvoudig schaalbaar.
 
@@ -46,6 +50,8 @@ Door gebruik te maken van een loop over de containerlijst is de oplossing eenvou
 ### Schaalbaarheid
 
 De oplossing ondersteunt eenvoudig opschalen door extra containers toe te voegen:
+
+[containers.yml](klant1/containers.yml)
 
 ```yaml
 containers:
