@@ -6,6 +6,9 @@
 ### Poging gedaan om op elke node (PVE01 .101, PVE02 .102, PVE03 .103) een ubuntu VM aan te maken. Deze lopen continu vast bij de setup. Lag waarschijnlijk aan de toegewezen 1gb ram i.p.v. 6 Wel weer een uur verder.
 ![ubuntusetup](screenshots/Picture1.png)
 
+### Op elke PVE node een docker vm.
+![docker status](screenshots/Picture26.png)
+
 ### Benodigde packages geïnstalleerd voor Docker (ca-certificates en curl):
 ![packages installeren](screenshots/Picture2.png)
 
