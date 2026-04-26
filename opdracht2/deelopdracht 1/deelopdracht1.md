@@ -3,7 +3,7 @@
 ## Opdrachten: Tutorial simplilearn https://www.simplilearn.com/tutorials/docker-tutorial
 ## Lesson 4 - Installeer op een Proxmox node een Ubunbtu host (bijvoorkeur VM) met daarop Docker.Registreer van alle lessons de uitkomsten met een screen recording/screenshots en leg het vast in je repository.
 
-### Poging gedaan om op elke node (PVE01 .101, PVE02 .102, PVE03 .103) een ubuntu VM aan te maken. Deze lopen continu vast bij de setup. Lag waarschijnlijk aan de toegewezen 1gb ram i.p.v. 6 Wel weer een uur verder.
+### Poging gedaan om op elke node (PVE01 .101, PVE02 .102, PVE03 .103) een ubuntu VM aan te maken. Deze lopen continu vast bij de setup. Lag waarschijnlijk aan de toegewezen 1gb ram i.p.v. de inmiddels 6gb. Wel weer een uur verder.
 ![ubuntusetup](screenshots/Picture1.png)
 
 ### Op elke PVE node een docker vm.
