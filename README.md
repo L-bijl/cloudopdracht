@@ -1,5 +1,6 @@
 ### Opdracht 1
-
+- [Deelopdracht 1 – Proxmox cluster opzetten en monitoren:](opdracht1/deelopdracht%201/deelopdracht1.md)
+- [Deelopdracht 2 – Uitrol van applicaties voor klanten volgens DevOps-methodiek:](opdracht1/deelopdracht%202/deelopdracht2.md)
 
 
 
