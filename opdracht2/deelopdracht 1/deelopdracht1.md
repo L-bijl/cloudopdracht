@@ -41,7 +41,7 @@
 ### Directory aangemaakt en Dockerfile voorbereid voor het bouwen van een image:
 ![dockerfile aanmaken](screenshots/Picture11.png)
 
-### Dockerfile aangemaakt met basisconfiguratie voor een custom image:
+### Dockerfile [dockerfile](dockerfile) aangemaakt met basisconfiguratie voor een custom image:
 ![dockerfile inhoud](screenshots/Picture12.png)
 
 ### Docker image gebouwd op basis van de Dockerfile:
@@ -55,7 +55,7 @@
 ### Docker Compose installatie gecontroleerd door versie op te vragen:
 ![docker compose version](screenshots/Picture15.png)
 
-### Docker Compose configuratie aangemaakt met meerdere services (app en database):
+### Docker Compose configuratie [dockercompose](docker-compose.yml) aangemaakt met meerdere services (app en database):
 ![docker compose config](screenshots/Picture16.png)
 
 ### Docker Compose stack gestart met meerdere services (app en database):
@@ -83,7 +83,7 @@
 
 ## Lesson 10 - "Basic Docker Neworking Command" Zet de commando's in een script en laat het script de commando's een voor een uitvoeren.
 
-### Shell script aangemaakt met basis Docker networking commando’s:
+### Shell script [networkscript](network.sh): aangemaakt met basis Docker networking commando’s:
 ![docker network script](screenshots/Picture24.png)
 
 ### Docker networking script uitgevoerd om netwerk en containers automatisch te beheren:
