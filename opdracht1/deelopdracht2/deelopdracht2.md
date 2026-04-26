@@ -29,10 +29,10 @@ De oplossing bestaat uit twee delen:
 
 ### Werkwijze
 
-De uitrol wordt aangestuurd vanuit één Ansible playbook:
+De uitrol wordt aangestuurd vanuit één Ansible playbook sinds `create_ct.yml` en `wp.yml` na mijn testfase uiteindelijk zijn samengevoegd:
 
 * Containers worden gedefinieerd in `containers.yml`
-* Het playbook:
+* Het playbook [site.yml](klant1/site.yml):
 
   * maakt containers aan
   * configureert netwerk
@@ -40,7 +40,7 @@ De uitrol wordt aangestuurd vanuit één Ansible playbook:
   * installeert WordPress
   * Voegt gemaakte containers toe aan een lijst voor monitoring. Helaas heeft de monitor node problemen inmiddels.
 
-  [site.yml](klant1/site.yml)
+  
 
 
 Door gebruik te maken van een loop over de containerlijst is de oplossing eenvoudig schaalbaar.
