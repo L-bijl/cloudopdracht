@@ -2,6 +2,7 @@
 Hieronder zijn de gemaakte opgaven te vinden vinden.
 Deelopdracht 2 van portfolio opdracht 1 bevat GEEN klant 2 met HA. Hier kwam ik niet meer aan toe.
 
+
 ### Portfolio opdracht 1
 - [Deelopdracht 1 – Proxmox cluster opzetten en monitoren](opdracht1/deelopdracht1/deelopdracht1.md)
 - [Deelopdracht 2 – Uitrol van applicaties voor klanten volgens DevOps-methodiek](opdracht1/deelopdracht2/deelopdracht2.md)
